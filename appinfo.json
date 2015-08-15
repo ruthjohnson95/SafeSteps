@@ -1,0 +1,19 @@
+{
+    "appKeys": {},
+    "capabilities": [
+        ""
+    ],
+    "companyName": "frankchen1698@gmail.com",
+    "longName": "SafeSteps",
+    "projectType": "native",
+    "resources": {
+        "media": []
+    },
+    "sdkVersion": "3",
+    "shortName": "SafeSteps",
+    "uuid": "59a727bc-982a-4a24-ad94-24396ae36367",
+    "versionLabel": "1.0",
+    "watchapp": {
+        "watchface": false
+    }
+}
