@@ -3,6 +3,62 @@
 Window* g_window;
 TextLayer *g_text_layer;
 TextLayer *title_layer, *location_layer, *temperature_layer, *time_layer;
+char location_buffer[64], temperature_buffer[32], time_buffer[32];
+
+enum {
+  KEY_LOCATION = 0,
+  KEY_TEMPERATURE = 1,
+};
+
+void process_tuple(Tuple *t)
+{
+  //Get key
+  int key = t->key;
+ 
+  //Get integer value, if present
+  int value = t->value->int32;
+ 
+  //Get string value, if present
+  char string_value[32];
+  strcpy(string_value, t->value->cstring);
+ 
+  //Decide what to do
+  switch(key) {
+    case KEY_LOCATION:
+      //Location received
+      snprintf(location_buffer, sizeof("Location: couldbereallylongname"), "Location: %s", string_value);
+      text_layer_set_text(location_layer, (char*) &location_buffer);
+      break;
+    case KEY_TEMPERATURE:
+      //Temperature received
+      snprintf(temperature_buffer, sizeof("Temperature: XX \u00B0C"), "Temperature: %d \u00B0C", value);
+      text_layer_set_text(temperature_layer, (char*) &temperature_buffer);
+      break;
+  }
+  
+  //Set time this update came in
+  time_t temp = time(NULL);
+  struct tm *tm = localtime(&temp);
+  strftime(time_buffer, sizeof("Last updated: XX:XX"), "Last updated: %H:%M", tm);
+  text_layer_set_text(time_layer, (char*) &time_buffer);
+}
+  
+
+static void in_received_handler(DictionaryIterator *iter, void *context)
+{
+  (void) context;
+     
+    //Get data
+    Tuple *t = dict_read_first(iter);
+    while(t != NULL)
+    {
+        process_tuple(t);
+         
+        //Get next
+        t = dict_read_next(iter);
+    }
+}
+
 
 static TextLayer* init_text_layer(GRect location, GColor colour, GColor background, const char *res_id, GTextAlignment alignment)
 {
@@ -61,6 +117,12 @@ void init(){
     .load = window_load,
     .unload = window_unload,
   });
+  //Setting up AppMessage
+  //Register AppMessage events
+app_message_register_inbox_received(in_received_handler);
+app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());    
+  //Largest possible input and output buffer sizes
+  
   // make the app actually appear when it is chosen from the Pebble menu
   window_stack_push(g_window, true);
 }
