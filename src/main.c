@@ -1,10 +1,34 @@
 #include <pebble.h>
 
+enum WeatherKey {
+  WEATHER_ICON_KEY = 0x0,         // TUPLE_INT
+  WEATHER_TEMPERATURE_KEY = 0x1,  // TUPLE_CSTRING
+  WEATHER_CITY_KEY = 0x2,         // TUPLE_CSTRING
+};
+
+static void sync_error_callback(DictionaryResult dict_error, AppMessageResult app_message_error, void *context) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "App Message Sync Error: %d", app_message_error);
+}
+
+static void request_weather(void) {
+  DictionaryIterator *iter;
+  app_message_outbox_begin(&iter);
+
+  if (!iter) {
+    // Error creating outbound message
+    return;
+  }
+
+  int value = 1;
+  dict_write_int(iter, 1, &value, sizeof(int), true);
+  dict_write_end(iter);
+
+  app_message_outbox_send();
+}
+
 Window* g_window;
 static TextLayer *s_time_layer;
 static GFont s_time_font;
-static BitmapLayer *s_background_layer;
-static GBitmap *s_background_bitmap;
 TextLayer *title_layer, *location_layer, *temperature_layer, *time_layer;
 char location_buffer[64], temperature_buffer[32], time_buffer[32];
 
@@ -46,7 +70,6 @@ void process_tuple(Tuple *t)
   text_layer_set_text(time_layer, (char*) &time_buffer);
 }
   
-
 static void in_received_handler(DictionaryIterator *iter, void *context)
 {
   (void) context;
@@ -123,11 +146,6 @@ void click_config_provider(void *context) {
 
 /* Window Load/Unload functions */
 static void window_load(Window *window) {  
-  // Create GBitmap, then set to created BitmapLayer
-  s_background_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_BACKGROUND);
-  s_background_layer = bitmap_layer_create(GRect(0, 0, 144, 168));
-  bitmap_layer_set_bitmap(s_background_layer, s_background_bitmap);
-  layer_add_child(window_get_root_layer(window), bitmap_layer_get_layer(s_background_layer));
   
   // Create time TextLayer
   s_time_layer = text_layer_create(GRect(0, 55, 144, 50));
@@ -141,7 +159,7 @@ static void window_load(Window *window) {
 
   // Add it as a child layer to the Window's root layer
   layer_add_child(window_get_root_layer(window), text_layer_get_layer(s_time_layer));
-
+  request_weather();
 }
 
 
@@ -161,11 +179,6 @@ static void window_unload(Window *window) {
     // Destroy TextLayer
     text_layer_destroy(s_time_layer);
     fonts_unload_custom_font(s_time_font);
-    // Destroy GBitmap
-    gbitmap_destroy(s_background_bitmap);
-    
-    // Destroy BitmapLayer
-    bitmap_layer_destroy(s_background_layer);
 
 }
 

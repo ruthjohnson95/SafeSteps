@@ -1,20 +1,19 @@
 {
-    "appKeys": {},
+    "appKeys": {
+        "WEATHER_CITY_KEY": 2,
+        "WEATHER_ICON_KEY": 0,
+        "WEATHER_TEMPERATURE_KEY": 1
+    },
     "capabilities": [
         ""
     ],
-    "companyName": "frankchen1698@gmail.com",
+    "companyName": "Fruthie ",
     "longName": "SafeSteps",
     "projectType": "native",
     "resources": {
         "media": [
             {
-                "file": "images/bitmap.png",
-                "name": "IMAGE_BACKGROUND",
-                "type": "png"
-            },
-            {
-                "file": "fonts/Roboto-Light.ttf",
+                "file": "fonts/Roboto-Medium.ttf",
                 "name": "FONT_KEY_ROBOTO_MEDIUM_40",
                 "type": "font"
             }
@@ -22,8 +21,12 @@
     },
     "sdkVersion": "3",
     "shortName": "SafeSteps",
-    "uuid": "59a727bc-982a-4a24-ad94-24396ae36367",
-    "versionLabel": "1.0",
+    "targetPlatforms": [
+        "aplite",
+        "basalt"
+    ],
+    "uuid": "eb2e3c30-99ba-410d-a3c0-adfad0c1f3ce",
+    "versionLabel": "2.0",
     "watchapp": {
         "watchface": false
     }
