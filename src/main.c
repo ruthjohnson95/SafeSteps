@@ -1,7 +1,10 @@
 #include <pebble.h>
 
 Window* g_window;
-TextLayer *g_text_layer;
+static TextLayer *s_time_layer;
+static GFont s_time_font;
+static BitmapLayer *s_background_layer;
+static GBitmap *s_background_bitmap;
 TextLayer *title_layer, *location_layer, *temperature_layer, *time_layer;
 char location_buffer[64], temperature_buffer[32], time_buffer[32];
 
@@ -71,24 +74,76 @@ static TextLayer* init_text_layer(GRect location, GColor colour, GColor backgrou
   return layer;
 }
 
-void window_load(Window *window)
-{
-  title_layer = init_text_layer(GRect(5, 0, 144, 30), GColorBlack, GColorClear, "RESOURCE_ID_GOTHIC_18", GTextAlignmentLeft);
-  text_layer_set_text(title_layer, "Openweathermap.org");
-  layer_add_child(window_get_root_layer(window), text_layer_get_layer(title_layer));
-  
-  location_layer = init_text_layer(GRect(5, 30, 144, 30), GColorBlack, GColorClear, "RESOURCE_ID_GOTHIC_18", GTextAlignmentLeft);
-  text_layer_set_text(location_layer, "Location: N/A");
-  layer_add_child(window_get_root_layer(window), text_layer_get_layer(location_layer));
- 
-  temperature_layer = init_text_layer(GRect(5, 60, 144, 30), GColorBlack, GColorClear, "RESOURCE_ID_GOTHIC_18", GTextAlignmentLeft);
-  text_layer_set_text(temperature_layer, "Temperature: N/A");
-  layer_add_child(window_get_root_layer(window), text_layer_get_layer(temperature_layer));
- 
-  time_layer = init_text_layer(GRect(5, 90, 144, 30), GColorBlack, GColorClear, "RESOURCE_ID_GOTHIC_18", GTextAlignmentLeft);
-  text_layer_set_text(time_layer, "Last updated: N/A");
-  layer_add_child(window_get_root_layer(window), text_layer_get_layer(time_layer));
+/* update time */
+static void update_time() {
+  // Get a tm structure
+  time_t temp = time(NULL); 
+  struct tm *tick_time = localtime(&temp);
+
+  // Create a long-lived buffer
+  static char buffer[] = "00:00";
+
+  // Write the current hours and minutes into the buffer
+  if(clock_is_24h_style() == true) {
+    // Use 24 hour format
+    strftime(buffer, sizeof("00:00"), "%H:%M", tick_time);
+  } else {
+    // Use 12 hour format
+    strftime(buffer, sizeof("00:00"), "%I:%M", tick_time);
+  }
+
+  // Display this time on the TextLayer
+  text_layer_set_text(s_time_layer, buffer);
 }
+
+/* tick timer handler*/
+static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
+  update_time();
+}
+
+/* Button clicks initialization */
+void up_click_handler(ClickRecognizerRef recognizer, void *context){
+  text_layer_set_text(s_time_layer, "UP!");
+}
+
+void down_click_handler(ClickRecognizerRef recognizer, void *context){
+  text_layer_set_text(s_time_layer, "DWN!");
+}
+
+void select_click_handler(ClickRecognizerRef recognizer, void *context) {
+  text_layer_set_text(s_time_layer, "SEL!");
+}
+
+/* Register clicks with the system */
+void click_config_provider(void *context) {
+  window_single_click_subscribe(BUTTON_ID_UP, up_click_handler);
+  window_single_click_subscribe(BUTTON_ID_DOWN, down_click_handler);
+  window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
+}
+
+/* Window Load/Unload functions */
+static void window_load(Window *window) {  
+  // Create GBitmap, then set to created BitmapLayer
+  s_background_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_BACKGROUND);
+  s_background_layer = bitmap_layer_create(GRect(0, 0, 144, 168));
+  bitmap_layer_set_bitmap(s_background_layer, s_background_bitmap);
+  layer_add_child(window_get_root_layer(window), bitmap_layer_get_layer(s_background_layer));
+  
+  // Create time TextLayer
+  s_time_layer = text_layer_create(GRect(0, 55, 144, 50));
+  text_layer_set_background_color(s_time_layer, GColorClear);
+  text_layer_set_text_color(s_time_layer, GColorBlack);
+
+  // Improve the layout to be more like a watchface
+  s_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_KEY_ROBOTO_MEDIUM_40));
+  text_layer_set_font(s_time_layer, s_time_font);
+  text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
+
+  // Add it as a child layer to the Window's root layer
+  layer_add_child(window_get_root_layer(window), text_layer_get_layer(s_time_layer));
+
+}
+
 
 /*
 void window_load(Window *window){
@@ -102,14 +157,18 @@ void window_load(Window *window){
 }
 */
 
-void window_unload(Window *window)
-{
-  text_layer_destroy(title_layer);
-  text_layer_destroy(location_layer);
-  text_layer_destroy(temperature_layer);
-  text_layer_destroy(time_layer);
+static void window_unload(Window *window) {
+    // Destroy TextLayer
+    text_layer_destroy(s_time_layer);
+    fonts_unload_custom_font(s_time_font);
+    // Destroy GBitmap
+    gbitmap_destroy(s_background_bitmap);
+    
+    // Destroy BitmapLayer
+    bitmap_layer_destroy(s_background_layer);
+
 }
-  
+
 void init(){
   // create app elements here
   g_window = window_create();
@@ -123,8 +182,17 @@ app_message_register_inbox_received(in_received_handler);
 app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());    
   //Largest possible input and output buffer sizes
   
+  // Register with TickTimerService
+  tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
+
+  // enable click function to set up click behavior 
+  window_set_click_config_provider(g_window, click_config_provider);
+  
   // make the app actually appear when it is chosen from the Pebble menu
   window_stack_push(g_window, true);
+  
+  // Make sure the time is displayed from the start
+  update_time();
 }
 
 void deinit(){
