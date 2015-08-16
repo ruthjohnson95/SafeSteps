@@ -126,15 +126,15 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 
 /* Button clicks initialization */
 void up_click_handler(ClickRecognizerRef recognizer, void *context){
-  text_layer_set_text(s_time_layer, "UP!");
+  text_layer_set_text(s_time_layer, "SENT");
 }
 
 void down_click_handler(ClickRecognizerRef recognizer, void *context){
-  text_layer_set_text(s_time_layer, "DWN!");
+  text_layer_set_text(s_time_layer, "SENT");
 }
 
 void select_click_handler(ClickRecognizerRef recognizer, void *context) {
-  text_layer_set_text(s_time_layer, "SEL!");
+  text_layer_set_text(s_time_layer, "SENT");
 }
 
 /* Register clicks with the system */
