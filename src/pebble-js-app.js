@@ -12,7 +12,7 @@ function iconFromWeatherId(weatherId) {
 
 function fetchWeather(latitude, longitude) {
   var req = new XMLHttpRequest();
-  req.open('GET', 'https://21385c4a.ngrok.io/', true);
+  req.open('GET', 'https://b46b3c79.ngrok.io/', true);
   req.onload = function () {
     if (req.readyState === 4) {
       if (req.status === 200) {
